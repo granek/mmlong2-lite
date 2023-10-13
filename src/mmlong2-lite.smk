@@ -161,8 +161,8 @@ rule Polishing:
 
 rule Eukaryote_removal:
     # CONTAINER - need to build container with tiara?
-    container: "docker://quay.io/biocontainers/seqkit:2.5.1--h9ee0642_0"
-    conda: "env_1"
+    # container: "docker://zhan4429/tiara:1.0.2"
+    container: "docker://quay.io/biocontainers/tiara:1.0.3"
     input:
         expand("{sample}/tmp/polishing/asm_pol_lenfilt.fasta",sample=sample)
     output:
