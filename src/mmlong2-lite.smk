@@ -135,7 +135,8 @@ rule Assembly:
         flye $flye_opt {fastq} --out-dir {sample}/tmp/flye --threads {proc} --meta $flye_ovlp --extra-params min_read_cov_cutoff={flye_cov}     
         """
 
-    container: "docker://quay.io/biocontainers/medaka:1.8.0--py38hdaa7744_0"
+rule Polishing:
+    container: "oras://gitlab-registry.oit.duke.edu/granek-lab/granek-container-images/mmlong-polishing-simage:latest"
     input:
         expand("{sample}/tmp/flye/assembly.fasta",sample=sample)
     output:
@@ -143,6 +144,7 @@ rule Assembly:
         filt=expand("{sample}/tmp/polishing/asm_pol_lenfilt.fasta",sample=sample)
     shell:
         """
+	if [ ! -d "$(pwd)/{sample}/results" ]; then mkdir {sample}/results; fi
 	if [ ! -d "$(pwd)/{sample}/tmp/polishing" ]; then mkdir {sample}/tmp/polishing; fi
 	if [ {mode} == "PacBio-HiFi" ]; then cp {input} {output.org}; else
 	grep ">" {input} | cut -c 2- | awk '{{print $1}}' > {sample}/tmp/polishing/ids.txt
