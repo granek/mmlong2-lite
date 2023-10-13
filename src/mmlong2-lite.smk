@@ -119,7 +119,7 @@ rule Finalise:
         """
 
 rule Assembly:
-    conda: "env_1"
+    container: "docker://quay.io/biocontainers/flye:2.9.2--py310h2b6aa90_2"
     output:
         expand("{sample}/tmp/flye/assembly.fasta",sample=sample),
         expand("{sample}/tmp/flye/assembly_graph.gfa",sample=sample),
@@ -135,8 +135,7 @@ rule Assembly:
         flye $flye_opt {fastq} --out-dir {sample}/tmp/flye --threads {proc} --meta $flye_ovlp --extra-params min_read_cov_cutoff={flye_cov}     
         """
 
-rule Polishing:
-    conda: "env_2"
+    container: "docker://quay.io/biocontainers/medaka:1.8.0--py38hdaa7744_0"
     input:
         expand("{sample}/tmp/flye/assembly.fasta",sample=sample)
     output:
@@ -159,6 +158,8 @@ rule Polishing:
         """
 
 rule Eukaryote_removal:
+    # CONTAINER - need to build container with tiara?
+    container: "docker://quay.io/biocontainers/seqkit:2.5.1--h9ee0642_0"
     conda: "env_1"
     input:
         expand("{sample}/tmp/polishing/asm_pol_lenfilt.fasta",sample=sample)
@@ -173,7 +174,7 @@ rule Eukaryote_removal:
         """
 
 rule cMAG_extraction:
-    conda: "env_1"
+    container: "docker://quay.io/biocontainers/samtools:1.18--h50ea8bc_1"
     input:
         expand("{sample}/tmp/polishing/asm_pol_lenfilt.fasta",sample=sample)
     output:
@@ -190,7 +191,7 @@ rule cMAG_extraction:
         """
 
 rule Coverage_calculation:
-    conda: "env_1"
+    container: "docker://quay.io/biocontainers/samtools:1.18--h50ea8bc_1"
     input:
         expand("{sample}/tmp/polishing/asm_pol_lenfilt.fasta",sample=sample)
     output:
@@ -224,7 +225,7 @@ rule Coverage_calculation:
         """
 
 rule Binning_prep_1:
-    conda: "env_1"
+    container: "docker://quay.io/biocontainers/seqkit:2.5.1--h9ee0642_0"
     params: 1
     input:
         expand("{sample}/tmp/eukfilt/asm_pol_lenfilt_eukfilt.fasta",sample=sample),
@@ -247,7 +248,7 @@ rule Binning_prep_1:
         """
 
 rule Binning_MetaBat2_1:
-    conda: "env_1"
+    container: "docker://quay.io/biocontainers/metabat2:2.15--h4da6f23_2"
     params: 1
     input:
         expand("{sample}/tmp/binning/round_1/contigs_lin.fasta",sample=sample)
@@ -260,7 +261,7 @@ rule Binning_MetaBat2_1:
         """
 
 rule Binning_SemiBin_1:
-    conda: "env_3"
+    container: "docker://quay.io/biocontainers/semibin:1.5.1--pyhdfd78af_0"
     params: 1
     input:
         expand("{sample}/tmp/binning/round_1/contigs_lin.fasta",sample=sample)
@@ -272,7 +273,7 @@ rule Binning_SemiBin_1:
         """
 
 rule Binning_GraphMB_1:
-    conda: "env_4"
+    container: "docker://quay.io/biocontainers/graphmb:0.2.5--pyh7cba7a3_0"
     params: 1
     input:
         expand("{sample}/tmp/binning/round_1/contigs_lin.fasta",sample=sample)
@@ -288,7 +289,8 @@ rule Binning_GraphMB_1:
         """
 
 rule Binning_DASTool_1:
-    conda: "env_1"
+    container: "docker://quay.io/biocontainers/das_tool:1.1.6--r42hdfd78af_0"
+
     params: 1
     input:
         expand("{sample}/tmp/binning/round_1/metabat2/bins_metabat2",sample=sample),
@@ -309,7 +311,8 @@ rule Binning_DASTool_1:
         """
 
 rule Binning_QC_1:
-    conda: "env_5"
+    container: "docker://quay.io/biocontainers/checkm2:1.0.1--pyh7cba7a3_0"
+
     params: 1 
     input:
         expand("{sample}/tmp/binning/round_1/das_tool/output_DASTool_scaffolds2bin.txt",sample=sample)
@@ -339,7 +342,7 @@ rule Binning_QC_1:
         """
 
 rule Binning_MetaBat2_2:
-    conda: "env_1"
+    container: "docker://quay.io/biocontainers/metabat2:2.15--h4da6f23_2"
     params: 2
     input:
         expand("{sample}/tmp/binning/round_2/contigs_lin.fasta",sample=sample)
@@ -352,6 +355,7 @@ rule Binning_MetaBat2_2:
         """
 
 rule Binning_SemiBin_2:
+    container: "docker://quay.io/biocontainers/semibin:1.5.1--pyhdfd78af_0"
     conda: "env_3"
     params: 2
     input:
@@ -364,7 +368,7 @@ rule Binning_SemiBin_2:
         """
 
 rule Binning_GraphMB_2:
-    conda: "env_4"
+    container: "docker://quay.io/biocontainers/graphmb:0.2.5--pyh7cba7a3_0"
     params: 2
     input:
         expand("{sample}/tmp/binning/round_2/contigs_lin.fasta",sample=sample)
@@ -380,7 +384,7 @@ rule Binning_GraphMB_2:
         """
 
 rule Binning_DASTool_2:
-    conda: "env_1"
+    container: "docker://quay.io/biocontainers/das_tool:1.1.6--r42hdfd78af_0"
     params: 2
     input:
         expand("{sample}/tmp/binning/round_2/metabat2/bins_metabat2",sample=sample),
@@ -401,7 +405,7 @@ rule Binning_DASTool_2:
         """
 
 rule Binning_QC_2:
-    conda: "env_5"
+    container: "docker://quay.io/biocontainers/checkm2:1.0.1--pyh7cba7a3_0"
     params: 2 
     input:
         expand("{sample}/tmp/binning/round_2/das_tool/output_DASTool_scaffolds2bin.txt",sample=sample)
@@ -431,7 +435,7 @@ rule Binning_QC_2:
         """
 
 rule Binning_MetaBat2_3:
-    conda: "env_1"
+    container: "docker://quay.io/biocontainers/metabat2:2.15--h4da6f23_2"
     params: 3
     input:
         expand("{sample}/tmp/binning/round_3/contigs_lin.fasta",sample=sample)
@@ -456,7 +460,7 @@ rule Binning_SemiBin_3:
         """
 
 rule Binning_GraphMB_3:
-    conda: "env_4"
+    container: "docker://quay.io/biocontainers/graphmb:0.2.5--pyh7cba7a3_0"
     params: 3
     input:
         expand("{sample}/tmp/binning/round_3/contigs_lin.fasta",sample=sample)
@@ -472,7 +476,7 @@ rule Binning_GraphMB_3:
         """
 
 rule Binning_DASTool_3:
-    conda: "env_1"
+    container: "docker://quay.io/biocontainers/das_tool:1.1.6--r42hdfd78af_0"
     params: 3
     input:
         expand("{sample}/tmp/binning/round_3/metabat2/bins_metabat2",sample=sample),
@@ -493,7 +497,7 @@ rule Binning_DASTool_3:
         """
 
 rule Binning_QC_3:
-    conda: "env_5"
+    container: "docker://quay.io/biocontainers/checkm2:1.0.1--pyh7cba7a3_0"
     params: 3
     input:
         expand("{sample}/tmp/binning/round_3/das_tool/output_DASTool_scaffolds2bin.txt",sample=sample)
@@ -523,7 +527,7 @@ rule Binning_QC_3:
         """
 
 rule Binning_MetaBat2_4:
-    conda: "env_1"
+    container: "docker://quay.io/biocontainers/metabat2:2.15--h4da6f23_2"
     params: 4
     input:
         expand("{sample}/tmp/binning/round_4/contigs_lin.fasta",sample=sample)
@@ -536,7 +540,7 @@ rule Binning_MetaBat2_4:
         """
 
 rule Binning_QC_4:
-    conda: "env_5"
+    container: "docker://quay.io/biocontainers/checkm2:1.0.1--pyh7cba7a3_0"
     params: 4
     input:
         expand("{sample}/tmp/binning/round_4/metabat2/bins_metabat2",sample=sample)
