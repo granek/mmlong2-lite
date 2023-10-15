@@ -159,20 +159,32 @@ rule Polishing:
 	seqkit seq -m {min_contig_len} {output.org} > {output.filt}
         """
 
-rule Eukaryote_removal:
+rule Eukaryote_removal_1:
     # CONTAINER - need to build container with tiara?
     # container: "docker://zhan4429/tiara:1.0.2"
     container: "docker://quay.io/biocontainers/tiara:1.0.3"
     input:
         expand("{sample}/tmp/polishing/asm_pol_lenfilt.fasta",sample=sample)
     output:
-        expand("{sample}/tmp/eukfilt/asm_pol_lenfilt_eukfilt.fasta",sample=sample)
+        expand("{sample}/tmp/eukfilt/contigs_filt.txt",sample=sample)
     shell:
         """
 	if [ ! -d "$(pwd)/{sample}/tmp/eukfilt" ]; then mkdir {sample}/tmp/eukfilt; fi
 	tiara -i {input} -t {proc} -m {min_contig_len} -o {sample}/tmp/eukfilt/tiara
-	cut -f1,2 {sample}/tmp/eukfilt/tiara | grep -e "prokarya" -e "bacteria" -e "archaea" -e "unknown" - | cut -f1 | sort > {sample}/tmp/eukfilt/contigs_filt.txt
-	seqkit grep -f {sample}/tmp/eukfilt/contigs_filt.txt {input} > {output}
+	cut -f1,2 {sample}/tmp/eukfilt/tiara | grep -e "prokarya" -e "bacteria" -e "archaea" -e "unknown" - | cut -f1 | sort > {output}
+        """
+
+rule Eukaryote_removal_2:
+    container: "docker://quay.io/biocontainers/seqkit:2.5.1--h9ee0642_0"
+    input:
+        expand("{sample}/tmp/eukfilt/contigs_filt.txt",sample=sample),
+        expand("{sample}/tmp/polishing/asm_pol_lenfilt.fasta",sample=sample)
+    output:
+        expand("{sample}/tmp/eukfilt/asm_pol_lenfilt_eukfilt.fasta",sample=sample)
+    shell:
+        """
+	if [ ! -d "$(pwd)/{sample}/tmp/eukfilt" ]; then mkdir {sample}/tmp/eukfilt; fi
+	seqkit grep -f {input} > {output}
         """
 
 rule cMAG_extraction:
