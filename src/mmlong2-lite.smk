@@ -193,7 +193,8 @@ rule cMAG_extraction:
         """
 
 rule Coverage_calculation:
-    container: "oras://gitlab-registry.oit.duke.edu/granek-lab/granek-container-images/mmlong-polishing-simage:latest"
+    container: "oras://gitlab-registry.oit.duke.edu/granek-lab/granek-container-images/mmlong2/mmlong-coverage-simage:latest"
+
     input:
         expand("{sample}/tmp/polishing/asm_pol_lenfilt.fasta",sample=sample)
     output:
