@@ -276,7 +276,7 @@ rule Binning_SemiBin_1:
         """
 
 rule Binning_GraphMB_1:
-    container: "docker://quay.io/biocontainers/graphmb:0.2.5--pyh7cba7a3_0"
+    container: "docker://andrelamurias/graphmb:0.1.5"
     params: 1
     input:
         expand("{sample}/tmp/binning/round_1/contigs_lin.fasta",sample=sample)
@@ -371,7 +371,7 @@ rule Binning_SemiBin_2:
         """
 
 rule Binning_GraphMB_2:
-    container: "docker://quay.io/biocontainers/graphmb:0.2.5--pyh7cba7a3_0"
+    container: "docker://andrelamurias/graphmb:0.1.5"
     params: 2
     input:
         expand("{sample}/tmp/binning/round_2/contigs_lin.fasta",sample=sample)
@@ -463,7 +463,7 @@ rule Binning_SemiBin_3:
         """
 
 rule Binning_GraphMB_3:
-    container: "docker://quay.io/biocontainers/graphmb:0.2.5--pyh7cba7a3_0"
+    container: "docker://andrelamurias/graphmb:0.1.5"
     params: 3
     input:
         expand("{sample}/tmp/binning/round_3/contigs_lin.fasta",sample=sample)
