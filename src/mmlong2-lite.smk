@@ -136,7 +136,7 @@ rule Assembly:
         """
 
 rule Polishing:
-    container: "oras://gitlab-registry.oit.duke.edu/granek-lab/granek-container-images/mmlong-polishing-simage:latest"
+    container: "oras://gitlab-registry.oit.duke.edu/granek-lab/granek-container-images/mmlong2/mmlong-polishing-simage:latest"
     input:
         expand("{sample}/tmp/flye/assembly.fasta",sample=sample)
     output:
