@@ -56,7 +56,8 @@ extra=""
 
 snakemake \
     --slurm --default-resources slurm_account=chsi slurm_partition=chsi mem_mb=400000 cpus_per_task=${NUM_THREADS} --jobs 30 \
-    --cores 1 \
+    --latency-wait 15 \
+    --cores 10 \
     --nolock \
     --use-singularity \
     --singularity-args "--bind $FASTQ_DIR" \
