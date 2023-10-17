@@ -188,7 +188,7 @@ rule Eukaryote_removal_2:
         """
 
 rule cMAG_extraction:
-    container: "docker://quay.io/biocontainers/samtools:1.18--h50ea8bc_1"
+    container: "oras://gitlab-registry.oit.duke.edu/granek-lab/granek-container-images/mmlong2/mmlong-polishing-simage:latest"
     input:
         expand("{sample}/tmp/polishing/asm_pol_lenfilt.fasta",sample=sample)
     output:
