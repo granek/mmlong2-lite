@@ -304,6 +304,10 @@ rule Binning_GraphMB_1:
         """
 
 rule Binning_DASTool_1:
+    # Changes:
+    #   find and replace: "Fasta_to_Scaffolds2Bin.sh" -> "Fasta_to_Contig2Bin.sh"
+    #   find and replace: "output_DASTool_scaffolds2bin.txt" -> "output_DASTool_contig2bin.tsv"
+    # Alternatively, could roll back to DAS Tool 1.1.3 using this image docker://quay.io/biocontainers/das_tool:1.1.3--r41hdfd78af_0
     container: "docker://quay.io/biocontainers/das_tool:1.1.6--r42hdfd78af_0"
 
     params: 1
@@ -312,16 +316,16 @@ rule Binning_DASTool_1:
         expand("{sample}/tmp/binning/round_1/semibin/bins_info.tsv",sample=sample),
         expand("{sample}/tmp/binning/round_1/graphmb/_best_contig2bin.tsv",sample=sample)
     output:
-        expand("{sample}/tmp/binning/round_1/das_tool/output_DASTool_scaffolds2bin.txt",sample=sample),
+        expand("{sample}/tmp/binning/round_1/das_tool/output_DASTool_contig2bin.tsv",sample=sample),
         metabat=expand("{sample}/tmp/binning/round_1/das_tool/metabat2.tsv",sample=sample),
         semibin=expand("{sample}/tmp/binning/round_1/das_tool/semibin.tsv",sample=sample),
         graphmb=expand("{sample}/tmp/binning/round_1/das_tool/graphmb.tsv",sample=sample)
     shell:
         """
 	if [ ! -d "$(pwd)/{sample}/tmp/binning/round_{params}/das_tool" ]; then mkdir {sample}/tmp/binning/round_{params}/das_tool; fi
-	Fasta_to_Scaffolds2Bin.sh -i {sample}/tmp/binning/round_{params}/metabat2 -e fa > {output.metabat}
-	Fasta_to_Scaffolds2Bin.sh -i {sample}/tmp/binning/round_{params}/semibin/output_bins -e fa > {output.semibin}
-	Fasta_to_Scaffolds2Bin.sh -i {sample}/tmp/binning/round_{params}/graphmb/_bins -e fa > {output.graphmb}
+	Fasta_to_Contig2Bin.sh -i {sample}/tmp/binning/round_{params}/metabat2 -e fa > {output.metabat}
+	Fasta_to_Contig2Bin.sh -i {sample}/tmp/binning/round_{params}/semibin/output_bins -e fa > {output.semibin}
+	Fasta_to_Contig2Bin.sh -i {sample}/tmp/binning/round_{params}/graphmb/_bins -e fa > {output.graphmb}
 	DAS_Tool -i {output.metabat},{output.semibin},{output.graphmb} -l MetaBAT2,SemiBin,GraphMB -c {sample}/tmp/binning/round_{params}/contigs_lin.fasta -o {sample}/tmp/binning/round_{params}/das_tool/output -t {proc} --score_threshold {das_tool_score_1} --search_engine diamond --write_bins
         """
 
@@ -330,7 +334,7 @@ rule Binning_QC_1:
 
     params: 1 
     input:
-        expand("{sample}/tmp/binning/round_1/das_tool/output_DASTool_scaffolds2bin.txt",sample=sample)
+        expand("{sample}/tmp/binning/round_1/das_tool/output_DASTool_contig2bin.tsv",sample=sample)
     output:
         expand("{sample}/tmp/binning/round_2/contigs_lin.fasta",sample=sample),
         expand("{sample}/tmp/binning/round_2/metabat_cov_filt.tsv",sample=sample)
@@ -406,16 +410,16 @@ rule Binning_DASTool_2:
         expand("{sample}/tmp/binning/round_2/semibin/bins_info.tsv",sample=sample),
         expand("{sample}/tmp/binning/round_2/graphmb/_best_contig2bin.tsv",sample=sample)
     output:
-        expand("{sample}/tmp/binning/round_2/das_tool/output_DASTool_scaffolds2bin.txt",sample=sample),
+        expand("{sample}/tmp/binning/round_2/das_tool/output_DASTool_contig2bin.tsv",sample=sample),
         metabat=expand("{sample}/tmp/binning/round_2/das_tool/metabat2.tsv",sample=sample),
         semibin=expand("{sample}/tmp/binning/round_2/das_tool/semibin.tsv",sample=sample),
         graphmb=expand("{sample}/tmp/binning/round_2/das_tool/graphmb.tsv",sample=sample)
     shell:
         """
 	if [ ! -d "$(pwd)/{sample}/tmp/binning/round_{params}/das_tool" ]; then mkdir {sample}/tmp/binning/round_{params}/das_tool; fi
-	Fasta_to_Scaffolds2Bin.sh -i {sample}/tmp/binning/round_{params}/metabat2 -e fa > {output.metabat}
-	Fasta_to_Scaffolds2Bin.sh -i {sample}/tmp/binning/round_{params}/semibin/output_bins -e fa > {output.semibin}
-	Fasta_to_Scaffolds2Bin.sh -i {sample}/tmp/binning/round_{params}/graphmb/_bins -e fa > {output.graphmb}
+	Fasta_to_Contig2Bin.sh -i {sample}/tmp/binning/round_{params}/metabat2 -e fa > {output.metabat}
+	Fasta_to_Contig2Bin.sh -i {sample}/tmp/binning/round_{params}/semibin/output_bins -e fa > {output.semibin}
+	Fasta_to_Contig2Bin.sh -i {sample}/tmp/binning/round_{params}/graphmb/_bins -e fa > {output.graphmb}
 	DAS_Tool -i {output.metabat},{output.semibin},{output.graphmb} -l MetaBAT2,SemiBin,GraphMB -c {sample}/tmp/binning/round_{params}/contigs_lin.fasta -o {sample}/tmp/binning/round_{params}/das_tool/output -t {proc} --score_threshold {das_tool_score_2} --search_engine diamond --write_bins 
         """
 
@@ -423,7 +427,7 @@ rule Binning_QC_2:
     container: "docker://quay.io/biocontainers/checkm2:1.0.1--pyh7cba7a3_0"
     params: 2 
     input:
-        expand("{sample}/tmp/binning/round_2/das_tool/output_DASTool_scaffolds2bin.txt",sample=sample)
+        expand("{sample}/tmp/binning/round_2/das_tool/output_DASTool_contig2bin.tsv",sample=sample)
     output:
         expand("{sample}/tmp/binning/round_3/contigs_lin.fasta",sample=sample),
         expand("{sample}/tmp/binning/round_3/metabat_cov_filt.tsv",sample=sample)
@@ -498,16 +502,16 @@ rule Binning_DASTool_3:
         expand("{sample}/tmp/binning/round_3/semibin/bins_info.tsv",sample=sample),
         expand("{sample}/tmp/binning/round_3/graphmb/_best_contig2bin.tsv",sample=sample)
     output:
-        expand("{sample}/tmp/binning/round_3/das_tool/output_DASTool_scaffolds2bin.txt",sample=sample),
+        expand("{sample}/tmp/binning/round_3/das_tool/output_DASTool_contig2bin.tsv",sample=sample),
         metabat=expand("{sample}/tmp/binning/round_3/das_tool/metabat2.tsv",sample=sample),
         semibin=expand("{sample}/tmp/binning/round_3/das_tool/semibin.tsv",sample=sample),
         graphmb=expand("{sample}/tmp/binning/round_3/das_tool/graphmb.tsv",sample=sample)
     shell:
         """
 	if [ ! -d "$(pwd)/{sample}/tmp/binning/round_{params}/das_tool" ]; then mkdir {sample}/tmp/binning/round_{params}/das_tool; fi
-	Fasta_to_Scaffolds2Bin.sh -i {sample}/tmp/binning/round_{params}/metabat2 -e fa > {output.metabat}
-	Fasta_to_Scaffolds2Bin.sh -i {sample}/tmp/binning/round_{params}/semibin/output_bins -e fa > {output.semibin}
-	Fasta_to_Scaffolds2Bin.sh -i {sample}/tmp/binning/round_{params}/graphmb/_bins -e fa > {output.graphmb}
+	Fasta_to_Contig2Bin.sh -i {sample}/tmp/binning/round_{params}/metabat2 -e fa > {output.metabat}
+	Fasta_to_Contig2Bin.sh -i {sample}/tmp/binning/round_{params}/semibin/output_bins -e fa > {output.semibin}
+	Fasta_to_Contig2Bin.sh -i {sample}/tmp/binning/round_{params}/graphmb/_bins -e fa > {output.graphmb}
 	DAS_Tool -i {output.metabat},{output.semibin},{output.graphmb} -l MetaBAT2,SemiBin,GraphMB -c {sample}/tmp/binning/round_{params}/contigs_lin.fasta -o {sample}/tmp/binning/round_{params}/das_tool/output -t {proc} --score_threshold {das_tool_score_3} --search_engine diamond --write_bins
         """
 
@@ -515,7 +519,7 @@ rule Binning_QC_3:
     container: "docker://quay.io/biocontainers/checkm2:1.0.1--pyh7cba7a3_0"
     params: 3
     input:
-        expand("{sample}/tmp/binning/round_3/das_tool/output_DASTool_scaffolds2bin.txt",sample=sample)
+        expand("{sample}/tmp/binning/round_3/das_tool/output_DASTool_contig2bin.tsv",sample=sample)
     output:
         expand("{sample}/tmp/binning/round_4/contigs_lin.fasta",sample=sample),
         expand("{sample}/tmp/binning/round_4/metabat_cov_filt.tsv",sample=sample)
