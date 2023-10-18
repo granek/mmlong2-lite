@@ -20,9 +20,11 @@ MEM_MB=600000
 MEDAKA_MODEL="r104_e81_hac_g5015" # Just guessing on the model, the paper doesn't say whether it is fast/hac/sup or guppy version
 # srun -A chsi -p chsi  singularity exec oras://gitlab-registry.oit.duke.edu/granek-lab/granek-container-images/mmlong2/mmlong-polishing-simage:latest  medaka tools list_models
 WORKDIR="/work/josh/mmlong_output"
+DB_DIR="/work/josh/mmlong_db"
 
 #-----------------------------------------------------------
 FASTQ_DIR=$(dirname $FASTQ_FILE)
+mkdir -p ${DB_DIR}
 #-----------------------------------------------------------
 mode=Nanopore-simplex
 cov="none"
@@ -66,12 +68,13 @@ snakemake \
     --cores ${SLURM_CPUS_PER_TASK} \
     --nolock \
     --use-singularity \
-    --singularity-args "--bind $FASTQ_DIR" \
+    --singularity-args "--bind ${FASTQ_DIR},${DB_DIR}" \
     -s ${SCRIPT_DIR}/mmlong2-lite.smk \
     --configfile ${SCRIPT_DIR}/mmlong2-lite-config.yaml \
     -R $RULE \
     --until $RULE \
     --config \
+    dbdir=$DB_DIR \
     sample=$SAMPLE \
     fastq=$FASTQ_FILE \
     proc=$NUM_THREADS \

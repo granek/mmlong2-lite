@@ -2,6 +2,7 @@
 # AUTHOR: Mantas Sereika (mase@bio.aau.dk)
 # LICENSE: GNU General Public License
 
+dbdir=config["dbdir"]
 sing=config["sing"]
 wf_v=config["version"]
 mode=config["mode"]
@@ -334,7 +335,8 @@ rule Binning_QC_1:
 
     params: 1 
     input:
-        expand("{sample}/tmp/binning/round_1/das_tool/output_DASTool_contig2bin.tsv",sample=sample)
+        expand("{sample}/tmp/binning/round_1/das_tool/output_DASTool_contig2bin.tsv",sample=sample),
+        db_path=expand("{dbdir}/CheckM2_database/uniref100.KO.1.dmnd",dbdir=config["dbdir"])
     output:
         expand("{sample}/tmp/binning/round_2/contigs_lin.fasta",sample=sample),
         expand("{sample}/tmp/binning/round_2/metabat_cov_filt.tsv",sample=sample)
@@ -345,10 +347,10 @@ rule Binning_QC_1:
 	if [ ! -d "$(pwd)/$next" ]; then mkdir $next; fi
 	if [ ! -d "$(pwd)/$prev/bins_innit" ]; then mkdir $prev/bins_innit; fi
 	n=1 && for i in $prev/das_tool/output_DASTool_bins/*.fa; do cp $i $prev/bins_innit/{sample}.bin.{params}.${{n}}.fa && n=$(($n+1)); done
-	/checkm2/bin/checkm2 predict -x .fa -i $prev/bins_innit -o $prev/checkm2 -t {proc}
+	checkm2 predict -x .fa -i $prev/bins_innit -o $prev/checkm2 -t {proc} --database_path {input.db_path}
 	awk -F "\t" '{{ if (($2 >= {min_compl_1}) && ($3 <= {min_cont_1})) {{print $1}} }}' $prev/checkm2/quality_report.tsv > $prev/bins_keep.txt
 	if [ $(cat $prev/bins_keep.txt | wc -l) -ge 1 ]; then
-	cat $prev/bins_keep.txt | xargs -i --max-procs={proc} bash -c 'cp ${{prev}}/bins_innit/{{}}.fa {sample}/tmp/binning/bins/.'
+	cat $prev/bins_keep.txt | xargs -i -P {proc} bash -c 'cp ${{prev}}/bins_innit/{{}}.fa {sample}/tmp/binning/bins/.'
 	cat {sample}/tmp/binning/bins/{sample}.bin.{params}.*.fa > $prev/binned.fasta
 	grep ">" $prev/binned.fasta | cut -c 2- | awk '{{print $1}}' | sort > $prev/binned.txt
 	grep -v -w -f $prev/binned.txt $prev/contigs_lin.txt | sort > $prev/unbinned.txt
@@ -427,7 +429,8 @@ rule Binning_QC_2:
     container: "docker://quay.io/biocontainers/checkm2:1.0.1--pyh7cba7a3_0"
     params: 2 
     input:
-        expand("{sample}/tmp/binning/round_2/das_tool/output_DASTool_contig2bin.tsv",sample=sample)
+        expand("{sample}/tmp/binning/round_2/das_tool/output_DASTool_contig2bin.tsv",sample=sample),
+        db_path=expand("{dbdir}/CheckM2_database/uniref100.KO.1.dmnd",dbdir=config["dbdir"])
     output:
         expand("{sample}/tmp/binning/round_3/contigs_lin.fasta",sample=sample),
         expand("{sample}/tmp/binning/round_3/metabat_cov_filt.tsv",sample=sample)
@@ -438,7 +441,7 @@ rule Binning_QC_2:
 	if [ ! -d "$(pwd)/$next" ]; then mkdir $next; fi
 	if [ ! -d "$(pwd)/$prev/bins_innit" ]; then mkdir $prev/bins_innit; fi
 	n=1 && for i in $prev/das_tool/output_DASTool_bins/*.fa; do cp $i $prev/bins_innit/{sample}.bin.{params}.${{n}}.fa && n=$(($n+1)); done
-	/checkm2/bin/checkm2 predict -x .fa -i $prev/bins_innit -o $prev/checkm2 -t {proc}
+	checkm2 predict -x .fa -i $prev/bins_innit -o $prev/checkm2 -t {proc} --database_path {input.db_path}
 	awk -F "\t" '{{ if (($2 >= {min_compl_2}) && ($3 <= {min_cont_2})) {{print $1}} }}' $prev/checkm2/quality_report.tsv > $prev/bins_keep.txt
 	if [ $(cat $prev/bins_keep.txt | wc -l) -ge 1 ]; then
 	cat $prev/bins_keep.txt | xargs -i --max-procs={proc} bash -c 'cp ${{prev}}/bins_innit/{{}}.fa {sample}/tmp/binning/bins/.'
@@ -519,7 +522,8 @@ rule Binning_QC_3:
     container: "docker://quay.io/biocontainers/checkm2:1.0.1--pyh7cba7a3_0"
     params: 3
     input:
-        expand("{sample}/tmp/binning/round_3/das_tool/output_DASTool_contig2bin.tsv",sample=sample)
+        expand("{sample}/tmp/binning/round_3/das_tool/output_DASTool_contig2bin.tsv",sample=sample),
+        db_path=expand("{dbdir}/CheckM2_database/uniref100.KO.1.dmnd",dbdir=config["dbdir"])
     output:
         expand("{sample}/tmp/binning/round_4/contigs_lin.fasta",sample=sample),
         expand("{sample}/tmp/binning/round_4/metabat_cov_filt.tsv",sample=sample)
@@ -530,7 +534,7 @@ rule Binning_QC_3:
 	if [ ! -d "$(pwd)/$next" ]; then mkdir $next; fi
 	if [ ! -d "$(pwd)/$prev/bins_innit" ]; then mkdir $prev/bins_innit; fi
 	n=1 && for i in $prev/das_tool/output_DASTool_bins/*.fa; do cp $i $prev/bins_innit/{sample}.bin.{params}.${{n}}.fa && n=$(($n+1)); done
-	/checkm2/bin/checkm2 predict -x .fa -i $prev/bins_innit -o $prev/checkm2 -t {proc}
+	checkm2 predict -x .fa -i $prev/bins_innit -o $prev/checkm2 -t {proc} --database_path {input.db_path}
 	awk -F "\t" '{{ if (($2 >= {min_compl_3}) && ($3 <= {min_cont_3})) {{print $1}} }}' $prev/checkm2/quality_report.tsv > $prev/bins_keep.txt
 	if [ $(cat $prev/bins_keep.txt | wc -l) -ge 1 ]; then
 	cat $prev/bins_keep.txt | xargs -i --max-procs={proc} bash -c 'cp ${{prev}}/bins_innit/{{}}.fa {sample}/tmp/binning/bins/.'
@@ -562,7 +566,8 @@ rule Binning_QC_4:
     container: "docker://quay.io/biocontainers/checkm2:1.0.1--pyh7cba7a3_0"
     params: 4
     input:
-        expand("{sample}/tmp/binning/round_4/metabat2/bins_metabat2",sample=sample)
+        expand("{sample}/tmp/binning/round_4/metabat2/bins_metabat2",sample=sample),
+        db_path=expand("{dbdir}/CheckM2_database/uniref100.KO.1.dmnd",dbdir=config["dbdir"])
     output:
         expand("{sample}/tmp/binning/checkm2.tsv",sample=sample)
     shell:
@@ -571,7 +576,7 @@ rule Binning_QC_4:
 	if [ ! -d "$(pwd)/$prev/bins_innit" ]; then mkdir $prev/bins_innit; fi
 	n=1 && for i in $prev/metabat2/*.fa; do cp $i $prev/bins_innit/{sample}.bin.{params}.${{n}}.fa && n=$(($n+1)); done
 	n=1 && for i in {sample}/tmp/binning/bins_c/cbins_init/*.fa; do cp $i $prev/bins_innit/{sample}.bin.c.${{n}}.fa && n=$(($n+1)); done
-	/checkm2/bin/checkm2 predict -x .fa -i $prev/bins_innit -o $prev/checkm2 -t {proc}
+	checkm2 predict -x .fa -i $prev/bins_innit -o $prev/checkm2 -t {proc} --database_path {input.db_path}
 	awk -F "\t" '{{ if (($2 >= {min_compl_4}) && ($3 <= {min_cont_4})) {{print $1}} }}' $prev/checkm2/quality_report.tsv > $prev/bins_keep.txt
 	if [ $(cat $prev/bins_keep.txt | wc -l) -ge 1 ]; then
 	cat $prev/bins_keep.txt | xargs -i --max-procs={proc} bash -c 'cp ${{prev}}/bins_innit/{{}}.fa {sample}/tmp/binning/bins/.'; fi
@@ -582,4 +587,17 @@ rule Binning_QC_4:
 	if [ $(cat {sample}/tmp/binning/round_2/bins_keep.txt | wc -l) -ge 1 ]; then grep -w -f {sample}/tmp/binning/bins.txt {sample}/tmp/binning/round_2/checkm2/quality_report.tsv >> {output}; fi
 	if [ $(cat {sample}/tmp/binning/round_3/bins_keep.txt | wc -l) -ge 1 ]; then grep -w -f {sample}/tmp/binning/bins.txt {sample}/tmp/binning/round_3/checkm2/quality_report.tsv >> {output}; fi
 	if [ $(cat {sample}/tmp/binning/round_4/bins_keep.txt | wc -l) -ge 1 ]; then grep -w -f {sample}/tmp/binning/bins.txt {sample}/tmp/binning/round_4/checkm2/quality_report.tsv >> {output}; fi
+        """
+
+rule CheckM2_DB_Download:
+    container: "docker://quay.io/biocontainers/checkm2:1.0.1--pyh7cba7a3_0"
+    output:
+        expand("{dbdir}/CheckM2_database/uniref100.KO.1.dmnd",dbdir=config["dbdir"])
+    shell:
+        """
+    # checkm2 database --download --path {dbdir} # doesn't work!
+    wget --quiet --directory-prefix={dbdir} https://zenodo.org/record/5571251/files/checkm2_database.tar.gz
+    tar -C {dbdir} -zxf {dbdir}/checkm2_database.tar.gz 
+    rm {dbdir}/checkm2_database.tar.gz
+    echo "Need to run md5sum using CONTENTS.json"
         """
