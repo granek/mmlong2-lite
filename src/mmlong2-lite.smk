@@ -63,14 +63,15 @@ onsuccess:
 onerror:
     print("An error has occurred. Inspect Snakemake log files for troubleshooting.")
 
-rule Finalise:
-    conda: "env_0"
+#---------------------------------------------------------------------------
+
+rule Finalise_1:
+    container: "docker://quay.io/biocontainers/quast:5.2.0--py310pl5321h6cc9453_3"
     input:
         expand("{sample}/tmp/binning/checkm2.tsv",sample=sample)
     output:
         dep=expand("{sample}/tmp/binning/dep_mmlong2-lite.csv",sample=sample),
-        df1=expand("{sample}/tmp/binning/bins_mmlong2-lite.tsv",sample=sample),
-        df2=expand("{sample}/results/{sample}_bins.tsv",sample=sample)
+        quast_tsv=expand("{sample}/tmp/binning/quast.tsv",sample=sample)
     shell:
         """
 	printf "software,version\n" > {output.dep}
@@ -92,19 +93,43 @@ rule Finalise:
 	printf "CoverM,0.6.1\n" >> {output.dep}
 	printf "QUAST,5.2.0\n" >> {output.dep}
 	cp {output.dep} {sample}/results/dependencies.csv
+
 	cp -r {sample}/tmp/binning/bins {sample}/results/.
 	
 	quast.py {sample}/tmp/binning/bins/*.fa -o {sample}/tmp/binning/quast -t {proc}
-	cut -f1,19,20,23 {sample}/tmp/binning/quast/transposed_report.tsv | sed 1d - > {sample}/tmp/binning/quast.tsv
-	coverm genome -b {sample}/tmp/binning/mapping_tmp/1_cov.bam -d {sample}/tmp/binning/bins -x fa -m mean -o {sample}/tmp/binning/bin_cov.tsv
-	coverm genome -b {sample}/tmp/binning/mapping_tmp/1_cov.bam -d {sample}/tmp/binning/bins -x fa -m relative_abundance -o {sample}/tmp/binning/bin_abund.tsv
+	cut -f1,19,20,23 {sample}/tmp/binning/quast/transposed_report.tsv | sed 1d - > {output.quast_tsv}
+        """
 
+rule Finalise_2:
+    container: "docker://quay.io/biocontainers/coverm:0.6.1--h1535e20_4"
+    input:
+        expand("{sample}/tmp/binning/quast.tsv",sample=sample)
+    output:
+        bin_cov=expand("{sample}/tmp/binning/bin_cov.tsv",sample=sample),
+        bin_abund=expand("{sample}/tmp/binning/bin_abund.tsv",sample=sample)
+    shell:
+        """
+	coverm genome -b {sample}/tmp/binning/mapping_tmp/1_cov.bam -d {sample}/tmp/binning/bins -x fa -m mean -o {output.bin_cov}
+	coverm genome -b {sample}/tmp/binning/mapping_tmp/1_cov.bam -d {sample}/tmp/binning/bins -x fa -m relative_abundance -o {output.bin_abund}
+        """
+
+rule Finalise:
+    container: "docker://rocker/r-ver:4.2.2"
+    input:
+        quast_tsv=expand("{sample}/tmp/binning/quast.tsv",sample=sample),
+        bin_cov=expand("{sample}/tmp/binning/bin_cov.tsv",sample=sample),
+        bin_abund=expand("{sample}/tmp/binning/bin_abund.tsv",sample=sample)
+    output:
+        df1=expand("{sample}/tmp/binning/bins_mmlong2-lite.tsv",sample=sample),
+        df2=expand("{sample}/results/{sample}_bins.tsv",sample=sample)
+    shell:
+        """
 	R --slave --silent --args << 'df'
-	quast <- read.delim("{sample}/tmp/binning/quast.tsv", sep="\t", header=F)
+	quast <- read.delim("{input.quast_tsv}", sep="\t", header=F)
 	colnames(quast) <- c("bin","N90","auN","N_per_100kb")
-	abund <- read.delim("{sample}/tmp/binning/bin_abund.tsv", sep="\t", header=T)
+	abund <- read.delim("{input.bin_abund}", sep="\t", header=T)
 	colnames(abund) <- c("bin","r_abund")
-	cov <- read.delim("{sample}/tmp/binning/bin_cov.tsv", sep="\t", header=T)
+	cov <- read.delim("{input.bin_cov}", sep="\t", header=T)
 	colnames(cov) <- c("bin","cov")
 	checkm2 <- read.delim("{sample}/tmp/binning/checkm2.tsv", sep="\t", header=T)
 	checkm2$Translation_Table_Used <- NULL
@@ -650,6 +675,7 @@ rule Binning_QC_4_2:
 	if [ $(cat {sample}/tmp/binning/round_2/bins_keep.txt | wc -l) -ge 1 ]; then grep -w -f {sample}/tmp/binning/bins.txt {sample}/tmp/binning/round_2/checkm2/quality_report.tsv >> {output}; fi
 	if [ $(cat {sample}/tmp/binning/round_3/bins_keep.txt | wc -l) -ge 1 ]; then grep -w -f {sample}/tmp/binning/bins.txt {sample}/tmp/binning/round_3/checkm2/quality_report.tsv >> {output}; fi
 	if [ $(cat {sample}/tmp/binning/round_4/bins_keep.txt | wc -l) -ge 1 ]; then grep -w -f {sample}/tmp/binning/bins.txt {sample}/tmp/binning/round_4/checkm2/quality_report.tsv >> {output}; fi
+        """
 #---------------------------------------------------------------------------
 
 rule CheckM2_DB_Download:
