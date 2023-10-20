@@ -13,8 +13,8 @@ set -eo pipefail
 set -u
 
 #-----------------------------------------------------------
-FASTQ_FILE="/work/josh/mmlong_data/zymo_promion_104/ERR7287988.fastq.gz"
-SAMPLE="zymo_104" # Look into "workdir" snakemake config <https://stackoverflow.com/a/40997767>
+FASTQ_FILE="/work/josh/mmlong_data/wwtp_gridion_104/ERR7256374.fastq.gz"
+SAMPLE="wwtp_104" # Look into "workdir" snakemake config <https://stackoverflow.com/a/40997767>
 NUM_THREADS=80
 MEM_MB=600000
 MEDAKA_MODEL="r104_e81_sup_g5015" # Just guessing on the model, the paper doesn't say whether it is fast/hac/sup or guppy version
