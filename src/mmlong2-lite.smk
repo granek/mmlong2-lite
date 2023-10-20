@@ -611,14 +611,15 @@ rule Binning_MetaBat2_4:
 	metabat2 -i {sample}/tmp/binning/round_{params}/contigs_lin.fasta -a {sample}/tmp/binning/round_{params}/metabat_cov_filt.tsv -o {output} -t {proc} -m {min_contig_len} -s {min_mag_len} --saveCls
         """
 
-rule Binning_QC_4:
+#---------------------------------------------------------------------------
+rule Binning_QC_4_1:
     container: "docker://quay.io/biocontainers/checkm2:1.0.1--pyh7cba7a3_0"
     params: 4
     input:
         expand("{sample}/tmp/binning/round_4/metabat2/bins_metabat2",sample=sample),
         db_path=expand("{dbdir}/CheckM2_database/uniref100.KO.1.dmnd",dbdir=config["dbdir"])
     output:
-        expand("{sample}/tmp/binning/checkm2.tsv",sample=sample)
+        expand("{sample}/tmp/binning/round_4/checkm2/quality_report.tsv",sample=sample)
     shell:
         """
 	export prev={sample}/tmp/binning/round_{params}
@@ -626,6 +627,19 @@ rule Binning_QC_4:
 	n=1 && for i in $prev/metabat2/*.fa; do cp $i $prev/bins_innit/{sample}.bin.{params}.${{n}}.fa && n=$(($n+1)); done
 	n=1 && for i in {sample}/tmp/binning/bins_c/cbins_init/*.fa; do cp $i $prev/bins_innit/{sample}.bin.c.${{n}}.fa && n=$(($n+1)); done
 	checkm2 predict -x .fa -i $prev/bins_innit -o $prev/checkm2 -t {proc} --database_path {input.db_path}
+        """
+#---------------------------------------------------------------------------
+rule Binning_QC_4_2:
+    container: "oras://gitlab-registry.oit.duke.edu/granek-lab/granek-container-images/mmlong2/mmlong-polishing-simage:latest"
+    params: 4
+    input:
+        expand("{sample}/tmp/binning/round_4/checkm2/quality_report.tsv",sample=sample)
+    output:
+        expand("{sample}/tmp/binning/checkm2.tsv",sample=sample)
+    shell:
+        """
+	export prev={sample}/tmp/binning/round_{params}
+	if [ ! -d "$(pwd)/$prev/bins_innit" ]; then mkdir $prev/bins_innit; fi
 	awk -F "\t" '{{ if (($2 >= {min_compl_4}) && ($3 <= {min_cont_4})) {{print $1}} }}' $prev/checkm2/quality_report.tsv > $prev/bins_keep.txt
 	if [ $(cat $prev/bins_keep.txt | wc -l) -ge 1 ]; then
 	cat $prev/bins_keep.txt | xargs -i -P {proc} bash -c 'cp ${{prev}}/bins_innit/{{}}.fa {sample}/tmp/binning/bins/.'; fi
@@ -636,7 +650,7 @@ rule Binning_QC_4:
 	if [ $(cat {sample}/tmp/binning/round_2/bins_keep.txt | wc -l) -ge 1 ]; then grep -w -f {sample}/tmp/binning/bins.txt {sample}/tmp/binning/round_2/checkm2/quality_report.tsv >> {output}; fi
 	if [ $(cat {sample}/tmp/binning/round_3/bins_keep.txt | wc -l) -ge 1 ]; then grep -w -f {sample}/tmp/binning/bins.txt {sample}/tmp/binning/round_3/checkm2/quality_report.tsv >> {output}; fi
 	if [ $(cat {sample}/tmp/binning/round_4/bins_keep.txt | wc -l) -ge 1 ]; then grep -w -f {sample}/tmp/binning/bins.txt {sample}/tmp/binning/round_4/checkm2/quality_report.tsv >> {output}; fi
-        """
+#---------------------------------------------------------------------------
 
 rule CheckM2_DB_Download:
     container: "docker://quay.io/biocontainers/checkm2:1.0.1--pyh7cba7a3_0"

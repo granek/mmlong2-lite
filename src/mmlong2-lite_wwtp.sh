@@ -72,7 +72,7 @@ mkdir -p $WORKDIR; cd $WORKDIR
 
 snakemake \
     --slurm --default-resources slurm_account=chsi slurm_partition=chsi mem_mb=${MEM_MB} cpus_per_task=${NUM_THREADS} --jobs 30 \
-    --latency-wait 15 \
+    --latency-wait 30 \
     --cores ${SLURM_CPUS_PER_TASK} \
     --nolock \
     --use-singularity \
