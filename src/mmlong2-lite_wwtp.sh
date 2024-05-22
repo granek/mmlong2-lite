@@ -1,14 +1,60 @@
 #!/usr/bin/env bash
-# DESCRIPTION: Wrapper script for running mmlong2-lite Snakemake workflow, based on mmlong2-lite script
+
+#SBATCH --mem=20G
+#SBATCH --cpus-per-task=10
+#SBATCH --partition=chsi
+#SBATCH --account=chsi
+#SBATCH --job-name=wwtp_mmlong2
 
 #-----------------------------------------------------------
-# Run the following to run this script:
-#   conda activate snakemake
-#   srun -A chsi -p chsi -c10 --mem 20G ./mmlong2-lite.sh 
+# Be sure data has been downloaded by running
+#  `download_wwtp_data.sh`
+#
+# Then Run the following to run this script:
+#   `sbatch mmlong2-lite_wwtp.sh`
+#-----------------------------------------------------------
+
+
+# DESCRIPTION: Wrapper script for running mmlong2-lite Snakemake workflow, based on mmlong2-lite script
+
+
+#-----------------------------------------------------------
+# https://github.com/conda/conda/issues/7980
+# https://stackoverflow.com/questions/53382383/makefile-cant-use-conda-activate/55696820#55696820
+eval "$(conda shell.bash hook)"
+# source ${CONDA_BASE}/etc/profile.d/conda.sh # alternative to above
+conda activate snakemake
 #-----------------------------------------------------------
 
 # Pre-set default settings
-SCRIPT_DIR="$(dirname "$(realpath "$0")")" # capture the path of this script
+# SCRIPT_DIR="$(dirname "$(realpath "$0")")" # capture the path of this script
+# https://stackoverflow.com/a/56991068
+if [ -n "${SLURM_JOB_ID:-}" ] ; then
+    THEPATH=$(scontrol show job "$SLURM_JOB_ID" | awk -F= '/Command=/{print $2}')
+else
+    THEPATH=$(realpath "$0")
+fi
+echo ${THEPATH}
+echo ${SCRIPT_PATH}
+export SCRIPT_PATH=$(dirname "${THEPATH}")
+
+
+# https://stackoverflow.com/a/75973157
+# {
+#   declare SCRIPT_INVOKED_NAME="${BASH_SOURCE[${#BASH_SOURCE[@]}-1]}"
+#   declare SCRIPT_NAME="${SCRIPT_INVOKED_NAME##*/}"
+#   declare SCRIPT_INVOKED_PATH="$( dirname "${SCRIPT_INVOKED_NAME}" )"
+#   declare SCRIPT_PATH="$( cd "${SCRIPT_INVOKED_PATH}"; pwd )"
+#   declare SCRIPT_RUN_DATE="$( date )"
+# }
+# echo $SCRIPT_INVOKED_NAME
+# echo $SCRIPT_NAME
+# echo $SCRIPT_INVOKED_PATH
+# echo $SCRIPT_PATH
+
+# export SCRIPT_PATH
+
+
 set -eo pipefail
 set -u
 
@@ -19,8 +65,8 @@ NUM_THREADS=80
 MEM_MB=600000
 MEDAKA_MODEL="r104_e81_sup_g5015" # Just guessing on the model, the paper doesn't say whether it is fast/hac/sup or guppy version
 # srun -A chsi -p chsi  singularity exec oras://gitlab-registry.oit.duke.edu/granek-lab/granek-container-images/mmlong2/mmlong-polishing-simage:latest  medaka tools list_models
-WORKDIR="/work/josh/mmlong_output"
-DB_DIR="/work/josh/mmlong_db"
+WORKDIR="/work/${USER}/mmlong_output"
+DB_DIR="/work/${USER}/mmlong_db"
 
 # https://pubmed.ncbi.nlm.nih.gov/35789207/
 # The generated raw Nanopore data were basecalled in super-accurate mode using Guppy v. 5.0.16 with the dna_r9.4.1_450bps_sup.cfg model for R9.4.1 and the dna_r10.4_e8.1_sup.cfg model for R10.4 chemistry. 
@@ -77,8 +123,8 @@ snakemake \
     --nolock \
     --use-singularity \
     --singularity-args "--bind ${FASTQ_DIR},${DB_DIR}" \
-    -s ${SCRIPT_DIR}/mmlong2-lite.smk \
-    --configfile ${SCRIPT_DIR}/mmlong2-lite-config.yaml \
+    -s ${SCRIPT_PATH}/mmlong2-lite.smk \
+    --configfile ${SCRIPT_PATH}/mmlong2-lite-config.yaml \
     -R $RULE \
     --until $RULE \
     --config \
